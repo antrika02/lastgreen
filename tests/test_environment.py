@@ -17,7 +17,10 @@ def test_runner_image_and_runner_version() -> None:
     found = changes(github_log(), github_log(image="20261004.325.1", runner="2.338.0"))
     assert found == [
         Change(
-            "runner", "runner image", "ubuntu-24.04 20260927.320.1", "ubuntu-24.04 20261004.325.1"
+            "runner",
+            "runner image",
+            "ubuntu-24.04 20260927.320.1",
+            "ubuntu-24.04 20261004.325.1",
         ),
         Change("runner", "runner version", "2.337.0", "2.338.0"),
     ]
@@ -43,7 +46,6 @@ def test_tools_found_without_specific_rules() -> None:
 
 
 def test_repeated_lines_are_not_used_for_tool_versions() -> None:
-    # `git version` appears twice in each log, so it is ambiguous and skipped.
     found = changes(github_log(), github_log(git="2.56.0"))
     assert found == []
 
@@ -91,6 +93,42 @@ def test_package_formats() -> None:
         ("requests", "2.32.2", "2.32.3"),
         ("left-pad", "1.3.0", "1.3.1"),
     }
+
+
+def test_maven_dependency_version_changes() -> None:
+    green = stamp(
+        [
+            (
+                "Downloaded from central: "
+                "https://repo.maven.apache.org/maven2/org/slf4j/"
+                "slf4j-api/2.0.12/slf4j-api-2.0.12.jar "
+                "(68 kB at 1.2 MB/s)"
+            )
+        ]
+    )
+    red = stamp(
+        [
+            (
+                "Downloaded from central: "
+                "https://repo.maven.apache.org/maven2/org/slf4j/"
+                "slf4j-api/2.0.13/slf4j-api-2.0.13.jar "
+                "(68 kB at 1.2 MB/s)"
+            )
+        ]
+    )
+    assert changes(green, red) == [Change("package", "org.slf4j:slf4j-api", "2.0.12", "2.0.13")]
+
+
+def test_gradle_dependency_version_changes() -> None:
+    green = stamp(["|    +--- org.slf4j:slf4j-api:2.0.12"])
+    red = stamp(["|    +--- org.slf4j:slf4j-api:2.0.13"])
+    assert changes(green, red) == [Change("package", "org.slf4j:slf4j-api", "2.0.12", "2.0.13")]
+
+
+def test_gradle_resolved_dependency_version() -> None:
+    green = stamp(["|    +--- org.slf4j:slf4j-api:2.0.12 -> 2.0.13"])
+    red = stamp(["|    +--- org.slf4j:slf4j-api:2.0.12 -> 2.0.14"])
+    assert changes(green, red) == [Change("package", "org.slf4j:slf4j-api", "2.0.13", "2.0.14")]
 
 
 def test_package_names_are_normalized_across_spellings() -> None:
@@ -168,7 +206,7 @@ def test_version_suffixes() -> None:
     assert [(c.old, c.new) for c in changes(green, red)] == [
         ("v22.11.0-rc.1", "v22.11.0-rc.2"),
         ("1.2.3+local.1", "1.2.4+local.1"),
-        ("1.2.3", "1.2.4"),  # "-py3" is a tag, not part of the version
+        ("1.2.3", "1.2.4"),
     ]
 
 
