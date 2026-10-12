@@ -1,0 +1,65 @@
+﻿2026-10-09T09:03:00.1000000Z Current runner version: '2.337.0'
+2026-10-09T09:03:03.1007919Z ##[group]Operating System
+2026-10-09T09:03:06.1015838Z Ubuntu
+2026-10-09T09:03:09.1023757Z 24.04.5
+2026-10-09T09:03:12.1031676Z LTS
+2026-10-09T09:03:15.1039595Z ##[endgroup]
+2026-10-09T09:03:18.1047514Z ##[group]Runner Image
+2026-10-09T09:03:21.1055433Z Image: ubuntu-24.04
+2026-10-09T09:03:24.1063352Z Version: 20261005.329.1
+2026-10-09T09:03:27.1071271Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261005.329/images/ubuntu/Ubuntu2404-Readme.md
+2026-10-09T09:03:30.1079190Z ##[endgroup]
+2026-10-09T09:03:33.1087109Z ##[group]GITHUB_TOKEN Permissions
+2026-10-09T09:03:36.1095028Z Contents: read
+2026-10-09T09:03:39.1102947Z Metadata: read
+2026-10-09T09:03:42.1110866Z ##[endgroup]
+2026-10-09T09:03:45.1118785Z Secret source: Actions
+2026-10-09T09:03:48.1126704Z Prepare workflow directory
+2026-10-09T09:03:51.1134623Z Prepare all required actions
+2026-10-09T09:03:54.1142542Z Getting action download info
+2026-10-09T09:03:57.1150461Z Download action repository 'actions/checkout@v4' (SHA:11bd71901bbe5b1630ceea73d27597364c9af683)
+2026-10-09T09:04:00.1158380Z Download action repository 'actions/setup-python@v5' (SHA:a26af69be951a213d495a4c3e4e4022e16d87065)
+2026-10-09T09:04:03.1166299Z Complete job name: test
+2026-10-09T09:04:06.1174218Z ##[group]Run actions/checkout@v4
+2026-10-09T09:04:09.1182137Z with:
+2026-10-09T09:04:12.1190056Z   repository: example/inventory
+2026-10-09T09:04:15.1197975Z   token: ***
+2026-10-09T09:04:18.1205894Z ##[endgroup]
+2026-10-09T09:04:21.1213813Z Syncing repository: example/inventory
+2026-10-09T09:04:24.1221732Z [command]/usr/bin/git version
+2026-10-09T09:04:27.1229651Z git version 2.55.0
+2026-10-09T09:04:30.1237570Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin
+2026-10-09T09:04:33.1245489Z ##[group]Run actions/setup-python@v5
+2026-10-09T09:04:36.1253408Z with:
+2026-10-09T09:04:39.1261327Z   python-version: 3.12
+2026-10-09T09:04:42.1269246Z ##[endgroup]
+2026-10-09T09:04:45.1277165Z ##[group]Installed versions
+2026-10-09T09:04:48.1285084Z Successfully set up CPython (3.12.7)
+2026-10-09T09:04:51.1293003Z ##[endgroup]
+2026-10-09T09:04:54.1300922Z ##[group]Run pip install -r requirements-dev.txt
+2026-10-09T09:04:57.1308841Z [36;1mpip install -r requirements-dev.txt[0m
+2026-10-09T09:05:00.1316760Z shell: /usr/bin/bash -e {0}
+2026-10-09T09:05:03.1324679Z ##[endgroup]
+2026-10-09T09:05:06.1332598Z Collecting pytest (from -r requirements-dev.txt (line 1))
+2026-10-09T09:05:09.1340517Z Collecting pytest-asyncio (from -r requirements-dev.txt (line 2))
+2026-10-09T09:05:12.1348436Z Installing collected packages: pluggy, iniconfig, pytest, pytest-asyncio
+2026-10-09T09:05:15.1356355Z Successfully installed iniconfig-2.1.0 pluggy-1.6.0 pytest-8.4.0 pytest-asyncio-0.24.0
+2026-10-09T09:05:18.1364274Z ##[group]Run pytest -q
+2026-10-09T09:05:21.1372193Z [36;1mpytest -q[0m
+2026-10-09T09:05:24.1380112Z shell: /usr/bin/bash -e {0}
+2026-10-09T09:05:27.1388031Z ##[endgroup]
+2026-10-09T09:05:30.1395950Z ..................E......................                                [100%]
+2026-10-09T09:05:33.1403869Z ==================================== ERRORS ====================================
+2026-10-09T09:05:36.1411788Z ____________________ ERROR at setup of test_reserve_stock _____________________
+2026-10-09T09:05:39.1419707Z file /home/runner/work/inventory/inventory/tests/test_orders.py, line 41
+2026-10-09T09:05:42.1427626Z   async def test_reserve_stock(db):
+2026-10-09T09:05:45.1435545Z E       fixture 'db' not found
+2026-10-09T09:05:48.1443464Z >       available fixtures: cache, capfd, capsys, event_loop_policy, monkeypatch, tmp_path
+2026-10-09T09:05:51.1451383Z =========================== short test summary info ============================
+2026-10-09T09:05:54.1459302Z ERROR tests/test_orders.py::test_reserve_stock
+2026-10-09T09:05:57.1467221Z 39 passed, 1 error in 1.91s
+2026-10-09T09:06:00.1475140Z ##[error]Process completed with exit code 1.
+2026-10-09T09:06:03.1483059Z Post job cleanup.
+2026-10-09T09:06:06.1490978Z [command]/usr/bin/git version
+2026-10-09T09:06:09.1498897Z git version 2.55.0
+2026-10-09T09:06:12.1506816Z Cleaning up orphan processes

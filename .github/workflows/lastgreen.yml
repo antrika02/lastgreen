@@ -1,0 +1,25 @@
+# When ci fails on this repository, compare it with the last green run using the current code.
+name: lastgreen
+
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  compare:
+    if: github.event.workflow_run.conclusion == 'failure'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+        run: uv run lastgreen "$RUN_URL" --format markdown >> "$GITHUB_STEP_SUMMARY"
