@@ -190,8 +190,8 @@ jobs:
   install, so their packages are not listed.
 - New lines include anything that is new, not only errors: a test added in the same commit
   shows up as a new `PASSED` line.
-- A comparison makes between 8 and about 45 API requests, one after another; on the runs
-  above it took 5 to 15 seconds.
+- A comparison makes between 8 and about 45 API requests, one after another; the pip
+  example above took about 14 seconds.
 
 ## Roadmap
 
