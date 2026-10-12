@@ -73,6 +73,13 @@ def _code_summary(code: CodeChange) -> str:
     return f"red is {code.ahead} ahead of and {code.behind} behind green"
 
 
+LINE_WIDTH = 200
+
+
+def _clip(text: str) -> str:
+    return text if len(text) <= LINE_WIDTH else text[: LINE_WIDTH - 1] + "…"
+
+
 def render_text(report: Report, max_lines: int = 30) -> str:
     out: list[str] = []
     if report.red:
@@ -111,7 +118,7 @@ def render_text(report: Report, max_lines: int = 30) -> str:
         width = len(str(shown_lines[-1].line))
         for new in shown_lines:
             repeat = f"  (x{new.repeats})" if new.repeats > 1 else ""
-            out.append(f"  {new.line:>{width}}  {new.text}{repeat}")
+            out.append(f"  {new.line:>{width}}  {_clip(new.text)}{repeat}")
     return "\n".join(out) + "\n"
 
 
@@ -160,7 +167,7 @@ def render_markdown(report: Report, max_lines: int = 30) -> str:
         out.append("```text")
         for new in report.new_lines[:max_lines]:
             repeat = f"  (x{new.repeats})" if new.repeats > 1 else ""
-            out.append(f"{new.line:>6}  {new.text}{repeat}")
+            out.append(f"{new.line:>6}  {_clip(new.text)}{repeat}")
         if len(report.new_lines) > max_lines:
             out.append(f"… {len(report.new_lines) - max_lines} more")
         out.append("```")

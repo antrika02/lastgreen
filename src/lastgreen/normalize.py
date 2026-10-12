@@ -8,6 +8,8 @@ _RULES: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"\d{4}-\d\d-\d\d[T ]\d\d:\d\d:\d\d(?:[.,]\d+)?(?:Z|[+-]\d\d:?\d\d)?"), "<time>"),
     (re.compile(r"\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b", re.I), "<id>"),
     (re.compile(r"\b0x[0-9a-f]+\b", re.I), "<addr>"),
+    # git describe and setuptools-scm suffixes such as "+g2950bc239".
+    (re.compile(r"\bg[0-9a-f]{7,40}\b"), "g<hex>"),
     (re.compile(r"\b(?=[0-9a-f]*[a-f])(?=[0-9a-f]*\d)[0-9a-f]{7,}\b"), "<hex>"),
     # Random names from Python's tempfile and mktemp.
     (re.compile(r"\btmp[a-z0-9_]{6,}\b"), "<tmp>"),

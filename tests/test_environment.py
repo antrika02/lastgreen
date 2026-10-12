@@ -141,3 +141,38 @@ def test_two_component_versions_need_a_version_cue() -> None:
     assert changes(green, red) == [
         Change("tool", "Hosted Compute Agent Version: …", "20260901.588", "20261001.601")
     ]
+
+
+def test_pip_downloads_are_packages_not_tools() -> None:
+    green = stamp(
+        [
+            "  Downloading platformdirs-4.11.3-py3-none-any.whl (23 kB)",
+            "  Downloading pyyaml-6.0.2.tar.gz (130 kB)",
+        ]
+    )
+    red = stamp(
+        [
+            "  Downloading platformdirs-4.11.5-py3-none-any.whl (23 kB)",
+            "  Downloading pyyaml-6.0.3.tar.gz (130 kB)",
+        ]
+    )
+    assert changes(green, red) == [
+        Change("package", "platformdirs", "4.11.3", "4.11.5"),
+        Change("package", "pyyaml", "6.0.2", "6.0.3"),
+    ]
+
+
+def test_version_suffixes() -> None:
+    green = stamp(["node version v22.11.0-rc.1", "tool version 1.2.3+local.1", "x 1.2.3-py3"])
+    red = stamp(["node version v22.11.0-rc.2", "tool version 1.2.4+local.1", "x 1.2.4-py3"])
+    assert [(c.old, c.new) for c in changes(green, red)] == [
+        ("v22.11.0-rc.1", "v22.11.0-rc.2"),
+        ("1.2.3+local.1", "1.2.4+local.1"),
+        ("1.2.3", "1.2.4"),  # "-py3" is a tag, not part of the version
+    ]
+
+
+def test_versions_derived_from_the_commit_are_code_not_environment() -> None:
+    green = stamp(["building pytest 9.2.0.dev353+ge84e063e7 sdist"])
+    red = stamp(["building pytest 9.2.0.dev355+g2950bc239 sdist"])
+    assert changes(green, red) == []

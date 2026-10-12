@@ -84,7 +84,7 @@ def _run_info(run: Json, job: Json) -> RunInfo:
     )
 
 
-def compare_run(args: argparse.Namespace) -> Report:
+def compare_run(args: argparse.Namespace, api: github.Api | None = None) -> Report:
     ref = github.parse_run_ref(args.run) if args.run else None
     repo = (ref.repo if ref else None) or (github.check_repo(args.repo) if args.repo else None)
     from_git = False
@@ -94,10 +94,11 @@ def compare_run(args: argparse.Namespace) -> Report:
     if not repo:
         raise GitHubError("cannot tell which repository: pass a run URL or --repo OWNER/REPO.")
 
-    token = github.find_token()
-    if not token:
-        raise GitHubError(NO_TOKEN)
-    api = github.Client(token)
+    if api is None:
+        token = github.find_token()
+        if not token:
+            raise GitHubError(NO_TOKEN)
+        api = github.Client(token)
 
     if ref is None:
         branch = github.current_branch() if from_git else None
@@ -106,6 +107,11 @@ def compare_run(args: argparse.Namespace) -> Report:
     attempt = ref.attempt or int(red_run.get("run_attempt") or 1)
     red_jobs = github.jobs(api, repo, ref.run_id, attempt)
     failed = github.failed_jobs(red_jobs)
+    if not red_jobs:
+        raise GitHubError(
+            f"run {ref.run_id} attempt {attempt} has no jobs: it failed before any job started, "
+            "usually because of an invalid workflow file. Open the run page for the error."
+        )
 
     if ref.job_id:
         red_job = next((j for j in red_jobs if j["id"] == ref.job_id), None)
@@ -145,6 +151,10 @@ def compare_run(args: argparse.Namespace) -> Report:
         red_steps,
         failed_step,
     )
+    # The repository's own code checked out as an action is a code change, not drift.
+    report.changes = [
+        c for c in report.changes if not (c.kind == "action" and c.name.lower() == repo.lower())
+    ]
     report.red = _run_info(red_run, red_job)
     report.green = _run_info(green_run, green_job)
     if note:

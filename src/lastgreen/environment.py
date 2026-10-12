@@ -37,13 +37,26 @@ _PACKAGE_LINES = [
         r"^\s*- (?:Installing|Updating|Downgrading) ([\w.-]+) \((?:\S+ -> )?(\d[^)\s]*)\)"
     ),
     re.compile(r"^\+ (@?[\w./-]+) (\d\S*)$"),  # pnpm
+    re.compile(  # pip downloading a wheel: name-version(-build)-python-abi-platform.whl
+        r"^\s*(?:Downloading|Using cached) (?:\S*/)?([A-Za-z0-9_.]+)-(\d[^-\s]*)"
+        r"(?:-\d[^-\s]*)?-[^-\s]+-[^-\s]+-[^-\s]+\.whl\b"
+    ),
+    re.compile(  # pip downloading an sdist
+        r"^\s*(?:Downloading|Using cached) (?:\S*/)?([A-Za-z0-9_.-]+?)-(\d[\w.]*)"
+        r"\.(?:tar\.gz|zip)\b"
+    ),
 ]
 
 _VERSION = re.compile(
-    r"(?<![\w.])(v?\d+(?:\.\d+)+(?:(?:a|b|rc|\.dev|\.post|-)[0-9A-Za-z.]*)?)(?![\w.])"
+    r"(?<![\w.])(v?\d+(?:\.\d+)+(?:(?:a|b|rc|\.dev|\.post)\d+)*"
+    r"(?:-(?:alpha|beta|rc|pre|dev|preview|canary|nightly)[0-9A-Za-z.]*)?"
+    r"(?:\+[0-9A-Za-z.]+)?)(?![\w.])"
 )
 _UNIT = re.compile(r"\s*(?:%|[KMGT]i?B\b|B/s|MBs|ms\b|s\b|secs?\b|seconds\b|minutes\b|x\b)")
 _IP = re.compile(r"^\d{1,3}(?:\.\d{1,3}){3}$")
+# Versions computed from the checked-out commit (setuptools-scm, git describe) change with
+# every commit: they describe the code under test, not its environment.
+_FROM_COMMIT = re.compile(r"[+.]g[0-9a-f]{7,40}\b")
 
 
 @dataclass(frozen=True)
@@ -207,6 +220,8 @@ def compare(green: Facts, red: Facts) -> list[Change]:
             continue
         label, new_versions = red.lines[template]
         if old_versions != new_versions:
+            if any(_FROM_COMMIT.search(v) for v in old_versions + new_versions):
+                continue
             pair = (_distinct(old_versions), _distinct(new_versions))
             grouped.setdefault(pair, []).append(label)
     for (old, new), labels in grouped.items():

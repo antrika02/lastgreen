@@ -31,3 +31,9 @@ def test_words_are_kept() -> None:
 def test_plain_words_that_look_hexish_survive() -> None:
     # "deadbeef" has no digit, "accepted" is a word: neither is an id.
     assert normalize("accepted deadbeef") == "accepted deadbeef"
+
+
+def test_scm_version_suffix() -> None:
+    assert normalize("pytest-9.2.0.dev355+g2950bc239") == normalize(
+        "pytest-9.2.0.dev351+ge84e0631a"
+    )
