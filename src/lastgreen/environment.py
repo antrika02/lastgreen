@@ -39,7 +39,7 @@ _PACKAGE_LINES = [
         r"^\s*- (?:Installing|Updating|Downgrading) ([\w.-]+) \((?:\S+ -> )?(\d[^)\s]*)\)"
     ),
     re.compile(r"^\+ (@?[\w./-]+) (\d\S*)$"),  # pnpm
-    re.compile(  # pip downloading a wheel
+    re.compile(  # pip downloading a wheel: name-version(-build)-python-abi-platform.whl
         r"^\s*(?:Downloading|Using cached) (?:\S*/)?([A-Za-z0-9_.]+)-(\d[^-\s]*)"
         r"(?:-\d[^-\s]*)?-[^-\s]+-[^-\s]+-[^-\s]+\.whl\b"
     ),
@@ -49,17 +49,23 @@ _PACKAGE_LINES = [
     ),
 ]
 
-# Maven artifact downloads from repositories using the standard /maven2/ path.
-# Example:
-# Downloaded from central: https://repo.maven.apache.org/maven2/org/slf4j/
-# slf4j-api/2.0.13/slf4j-api-2.0.13.jar (68 kB at 1.2 MB/s)
+# Maven artifact downloads.
+# Supports standard Maven Central URLs and optional Maven [INFO] prefixes.
 _MAVEN_DOWNLOAD = re.compile(
-    r"^Downloaded from \S+: https?://[^/\s]+/"
+    r"^(?:\[INFO\]\s+)?"
+    r"(?P<status>Downloading|Downloaded) from \S+: "
+    r"https?://[^/\s]+/"
     r"(?:[^/\s]+/)*?maven2/"
-    r"(?P<group_path>(?:[^/\s]+/)+)"
+    r"(?P<group_path>(?:[^/\s]+/)+?)"
     r"(?P<artifact>[^/\s]+)/"
     r"(?P<version>[^/\s]+)/"
-    r"(?P<filename>[^/\s]+\.jar)(?:\s|$)"
+    r"(?P<filename>[^/\s]+\.(?:jar|pom))(?:\s|$)"
+)
+
+# Match Maven download lines even when their URL cannot be parsed as an artifact.
+# This prevents incomplete downloads from being treated as generic tool changes.
+_MAVEN_DOWNLOAD_LINE = re.compile(
+    r"^(?:\[INFO\]\s+)?(?:Downloading|Downloaded) from \S+: https?://"
 )
 
 # Gradle dependency reports commonly contain lines such as:
@@ -89,11 +95,11 @@ _FROM_COMMIT = re.compile(r"[+.]g[0-9a-f]{7,40}\b")
 
 @dataclass(frozen=True)
 class Change:
-    kind: str
+    kind: str  # "runner", "action", "tool", "package"
     name: str
-    old: str | None
-    new: str | None
-    also: int = 0
+    old: str | None  # None: only in the failing run
+    new: str | None  # None: only in the passing run
+    also: int = 0  # other log lines that show the same version change
 
 
 @dataclass
@@ -102,6 +108,7 @@ class Facts:
     actions: dict[str, set[str]] = field(default_factory=dict)
     packages: dict[str, set[str]] = field(default_factory=dict)
     package_names: dict[str, str] = field(default_factory=dict)
+    # template -> (display label, versions) for lines that occur once
     lines: dict[str, tuple[str, tuple[str, ...]]] = field(default_factory=dict)
 
 
@@ -133,20 +140,22 @@ def _packages_in(line: str) -> list[tuple[str, str]]:
         if pinned:
             return pinned
 
-    # Maven downloads identify a dependency using its group and artifact IDs.
+    # Ignore incomplete or unrecognized Maven downloads as package changes.
     match = _MAVEN_DOWNLOAD.match(stripped)
     if match:
-        group_path = match.group("group_path")
+        if match.group("status") != "Downloaded":
+            return []
+
+        group_id = match.group("group_path").rstrip("/").replace("/", ".")
         artifact = match.group("artifact")
         version = match.group("version")
         filename = match.group("filename")
 
-        expected_prefix = f"{artifact}-{version}"
-        if filename == f"{expected_prefix}.jar" or (
-            filename.startswith(f"{expected_prefix}-") and filename.endswith(".jar")
-        ):
-            group_id = group_path.rstrip("/").replace("/", ".")
-            return [(f"{group_id}:{artifact}", version)]
+        # Verify that the filename matches the artifact coordinates.
+        if filename not in (f"{artifact}-{version}.jar", f"{artifact}-{version}.pom"):
+            return []
+
+        return [(f"{group_id}:{artifact}", version)]
 
     # Gradle dependency reports may show a requested version and a resolved version.
     match = _GRADLE_DEPENDENCY.match(stripped)
@@ -220,6 +229,10 @@ def extract(log: JobLog) -> Facts:
         if packages:
             for name, version in packages:
                 _add_package(facts, name, version)
+            continue
+
+        # Maven download-start lines must not fall through to generic version detection.
+        if _MAVEN_DOWNLOAD_LINE.match(text.strip()):
             continue
 
         spans = _versions_in(text)
@@ -312,6 +325,7 @@ def compare(green: Facts, red: Facts) -> list[Change]:
         label = min(labels, key=len)
         changes.append(Change("tool", _shorten(label), old, new, also=len(labels) - 1))
 
+    # Upgrades and downgrades first, then packages that appeared or disappeared.
     in_both = green.packages.keys() & red.packages.keys()
 
     for key in sorted(
