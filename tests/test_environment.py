@@ -46,6 +46,7 @@ def test_tools_found_without_specific_rules() -> None:
 
 
 def test_repeated_lines_are_not_used_for_tool_versions() -> None:
+    # `git version` appears twice in each log, so it is ambiguous and skipped.
     found = changes(github_log(), github_log(git="2.56.0"))
     assert found == []
 
@@ -206,7 +207,7 @@ def test_version_suffixes() -> None:
     assert [(c.old, c.new) for c in changes(green, red)] == [
         ("v22.11.0-rc.1", "v22.11.0-rc.2"),
         ("1.2.3+local.1", "1.2.4+local.1"),
-        ("1.2.3", "1.2.4"),
+        ("1.2.3", "1.2.4"),  # "-py3" is a tag, not part of the version
     ]
 
 
