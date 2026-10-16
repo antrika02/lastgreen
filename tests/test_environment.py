@@ -17,10 +17,7 @@ def test_runner_image_and_runner_version() -> None:
     found = changes(github_log(), github_log(image="20261004.325.1", runner="2.338.0"))
     assert found == [
         Change(
-            "runner",
-            "runner image",
-            "ubuntu-24.04 20260927.320.1",
-            "ubuntu-24.04 20261004.325.1",
+            "runner", "runner image", "ubuntu-24.04 20260927.320.1", "ubuntu-24.04 20261004.325.1"
         ),
         Change("runner", "runner version", "2.337.0", "2.338.0"),
     ]
@@ -232,7 +229,6 @@ def test_maven_info_prefixed_downloads() -> None:
             "slf4j-api/2.0.13/slf4j-api-2.0.13.jar (68 kB)",
         ]
     )
-
     assert changes(green, red) == [Change("package", "org.slf4j:slf4j-api", "2.0.12", "2.0.13")]
 
 
@@ -251,5 +247,4 @@ def test_maven_download_start_is_ignored() -> None:
             "slf4j-api/2.0.13/slf4j-api-2.0.13.jar",
         ]
     )
-
     assert changes(green, red) == []
